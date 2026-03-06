@@ -54,7 +54,7 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
 CMD ["./cursor2api-go"]
 
 # 内置所有默认环境变量
-ENV PORT=8002 \
+ENV PORT=5000 \
     DEBUG=false \
     API_KEY=0000 \
     MODELS=claude-sonnet-4.6 \
