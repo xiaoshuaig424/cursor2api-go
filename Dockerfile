@@ -56,7 +56,7 @@ CMD ["./cursor2api-go"]
 # 内置所有默认环境变量
 ENV PORT=8002 \
     DEBUG=false \
-    API_KEY=0000 \
+    API_KEY=sk-StheHAVkgHW6HlfG7 \
     MODELS=claude-sonnet-4.6 \
     SYSTEM_PROMPT_INJECT= \
     TIMEOUT=60 \
