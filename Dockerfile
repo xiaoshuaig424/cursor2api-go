@@ -52,16 +52,3 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
 
 # 启动应用
 CMD ["./cursor2api-go"]
-
-# 内置所有默认环境变量
-ENV PORT=8002 \
-    DEBUG=false \
-    API_KEY=sk-StheHAVkgHW6HlfG7 \
-    MODELS=claude-sonnet-4.6 \
-    SYSTEM_PROMPT_INJECT= \
-    TIMEOUT=60 \
-    MAX_INPUT_LENGTH=200000 \
-    USER_AGENT="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36" \
-    UNMASKED_VENDOR_WEBGL="Google Inc. (Intel)" \
-    UNMASKED_RENDERER_WEBGL="ANGLE (Intel, Intel(R) UHD Graphics 620 Direct3D11 vs_5_0 ps_5_0, D3D11)" \
-    SCRIPT_URL="https://cursor.com/_next/static/chunks/pages/_app.js"
