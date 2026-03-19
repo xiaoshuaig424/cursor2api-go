@@ -60,6 +60,7 @@ ENV PORT=8002 \
     MODELS=claude-sonnet-4.6 \
     SYSTEM_PROMPT_INJECT= \
     TIMEOUT=60 \
+    KILO_TOOL_STRICT=true \
     MAX_INPUT_LENGTH=200000 \
     USER_AGENT="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36" \
     UNMASKED_VENDOR_WEBGL="Google Inc. (Intel)" \
