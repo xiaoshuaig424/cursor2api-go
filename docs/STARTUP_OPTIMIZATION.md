@@ -29,7 +29,7 @@ INFO[0000] Starting Cursor2API server on port 8002
 📚 API 文档:  http://localhost:8002/
 💊 健康检查:  http://localhost:8002/health
 🔑 API 密钥:  0000
-🤖 支持模型:  gpt-5.1 等 23 个模型
+🤖 支持模型:  仅 `claude-sonnet-4.6` 与 `claude-sonnet-4.6-thinking`（thinking 为派生公开模型）
 
 ✨ 服务已启动，按 Ctrl+C 停止
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

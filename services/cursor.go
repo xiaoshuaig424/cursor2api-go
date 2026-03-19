@@ -21,6 +21,7 @@
 package services
 
 import (
+	"bufio"
 	"context"
 	"cursor2api-go/config"
 	"cursor2api-go/middleware"
@@ -91,9 +92,12 @@ func NewCursorService(cfg *config.Config) *CursorService {
 
 // ChatCompletion creates a chat completion stream for the given request.
 func (s *CursorService) ChatCompletion(ctx context.Context, request *models.ChatCompletionRequest) (<-chan interface{}, error) {
-	payload := s.buildCursorRequest(request)
+	buildResult, err := s.buildCursorRequest(request)
+	if err != nil {
+		return nil, err
+	}
 
-	jsonPayload, err := json.Marshal(payload)
+	jsonPayload, err := json.Marshal(buildResult.Payload)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal cursor payload: %w", err)
 	}
@@ -178,32 +182,227 @@ func (s *CursorService) ChatCompletion(ctx context.Context, request *models.Chat
 
 		// 成功,返回结果
 		output := make(chan interface{}, 32)
-		go s.consumeSSE(ctx, resp.Response, output)
+		go s.consumeSSE(ctx, resp.Response, output, buildResult.ParseConfig)
 		return output, nil
 	}
 
 	return nil, fmt.Errorf("failed after %d attempts", maxRetries)
 }
 
-func (s *CursorService) buildCursorRequest(request *models.ChatCompletionRequest) models.CursorRequest {
-	truncatedMessages := s.truncateMessages(request.Messages)
-	cursorMessages := models.ToCursorMessages(truncatedMessages, s.config.SystemPromptInject)
-
-	payload := models.CursorRequest{
-		Context:  []interface{}{},
-		Model:    models.GetCursorModel(request.Model),
-		ID:       utils.GenerateRandomString(16),
-		Messages: cursorMessages,
-		Trigger:  "submit-message",
-	}
-
-	return payload
+type nonStreamCollectResult struct {
+	Message      models.Message
+	FinishReason string
+	Usage        models.Usage
+	ToolCalls    []models.ToolCall
+	Text         string
 }
 
-func (s *CursorService) consumeSSE(ctx context.Context, resp *http.Response, output chan interface{}) {
-	defer close(output)
+func (s *CursorService) collectNonStream(ctx context.Context, gen <-chan interface{}, modelName string) (nonStreamCollectResult, error) {
+	var fullContent strings.Builder
+	var usage models.Usage
+	toolCalls := make([]models.ToolCall, 0, 2)
+	finishReason := "stop"
 
-	if err := utils.ReadSSEStream(ctx, resp, output); err != nil {
+	for {
+		select {
+		case <-ctx.Done():
+			return nonStreamCollectResult{}, ctx.Err()
+		case data, ok := <-gen:
+			if !ok {
+				msg := models.Message{Role: "assistant"}
+				if fullContent.Len() > 0 || len(toolCalls) == 0 {
+					msg.Content = fullContent.String()
+				}
+				if len(toolCalls) > 0 {
+					msg.ToolCalls = toolCalls
+					finishReason = "tool_calls"
+				}
+				return nonStreamCollectResult{
+					Message:      msg,
+					FinishReason: finishReason,
+					Usage:        usage,
+					ToolCalls:    toolCalls,
+					Text:         fullContent.String(),
+				}, nil
+			}
+
+			switch v := data.(type) {
+			case models.AssistantEvent:
+				switch v.Kind {
+				case models.AssistantEventText:
+					fullContent.WriteString(v.Text)
+				case models.AssistantEventToolCall:
+					if v.ToolCall != nil {
+						toolCalls = append(toolCalls, *v.ToolCall)
+					}
+				case models.AssistantEventThinking:
+					// thinking 对于 OpenAI chat.completion 的 message.content 不直接暴露
+					continue
+				}
+			case string:
+				fullContent.WriteString(v)
+			case models.Usage:
+				usage = v
+			case error:
+				return nonStreamCollectResult{}, v
+			default:
+				continue
+			}
+		}
+	}
+}
+
+func (s *CursorService) toolCallRequiredForRequest(request *models.ChatCompletionRequest) (bool, toolChoiceSpec, error) {
+	choice, err := parseToolChoice(request.ToolChoice)
+	if err != nil {
+		return false, toolChoiceSpec{}, err
+	}
+	if s.config != nil && s.config.KiloToolStrict && len(request.Tools) > 0 && choice.Mode == "auto" {
+		choice.Mode = "required"
+	}
+	if len(request.Tools) == 0 {
+		return false, choice, nil
+	}
+	return choice.Mode == "required" || choice.Mode == "function", choice, nil
+}
+
+func (s *CursorService) withToolRetrySystemMessage(request *models.ChatCompletionRequest, choice toolChoiceSpec) *models.ChatCompletionRequest {
+	cloned := *request
+	cloned.Messages = append([]models.Message(nil), request.Messages...)
+
+	var b strings.Builder
+	b.WriteString("TOOL USE REQUIRED.\n")
+	b.WriteString("Your next assistant message MUST be a tool call and must contain only the tool call in the exact bridge format. Do not output any natural language.\n")
+	if choice.Mode == "function" && strings.TrimSpace(choice.FunctionName) != "" {
+		b.WriteString(fmt.Sprintf("You MUST call function %q.\n", strings.TrimSpace(choice.FunctionName)))
+	} else {
+		b.WriteString("You MUST call at least one tool.\n")
+	}
+	b.WriteString("After receiving the tool result, you will provide the final answer.\n")
+
+	sys := models.Message{Role: "system", Content: b.String()}
+	cloned.Messages = append([]models.Message{sys}, cloned.Messages...)
+	return &cloned
+}
+
+// ChatCompletionNonStream runs a non-stream chat completion and returns a single OpenAI-compatible response.
+// It includes a Kilo-compatibility retry: if tools are provided and tool use is required but no tool_calls
+// are produced, it retries once with a stronger system instruction.
+func (s *CursorService) ChatCompletionNonStream(ctx context.Context, request *models.ChatCompletionRequest) (*models.ChatCompletionResponse, error) {
+	required, choice, err := s.toolCallRequiredForRequest(request)
+	if err != nil {
+		return nil, middleware.NewRequestValidationError(err.Error(), "invalid_tool_choice")
+	}
+
+	runOnce := func(req *models.ChatCompletionRequest) (nonStreamCollectResult, error) {
+		gen, err := s.ChatCompletion(ctx, req)
+		if err != nil {
+			return nonStreamCollectResult{}, err
+		}
+		return s.collectNonStream(ctx, gen, req.Model)
+	}
+
+	result, err := runOnce(request)
+	if err != nil {
+		return nil, err
+	}
+
+	if required && len(result.ToolCalls) == 0 {
+		retryReq := s.withToolRetrySystemMessage(request, choice)
+		retryResult, retryErr := runOnce(retryReq)
+		if retryErr == nil {
+			result = retryResult
+		} else {
+			logrus.WithError(retryErr).Warn("tool-required retry failed; returning first attempt")
+		}
+	}
+
+	respID := utils.GenerateChatCompletionID()
+	return models.NewChatCompletionResponse(respID, request.Model, result.Message, result.FinishReason, result.Usage), nil
+}
+
+func (s *CursorService) consumeSSE(ctx context.Context, resp *http.Response, output chan interface{}, parseConfig models.CursorParseConfig) {
+	defer close(output)
+	defer resp.Body.Close()
+
+	parser := utils.NewCursorProtocolParser(parseConfig)
+	scanner := bufio.NewScanner(resp.Body)
+	scanner.Buffer(make([]byte, 0, 64*1024), 1024*1024)
+
+	flushParser := func() {
+		for _, event := range parser.Finish() {
+			select {
+			case output <- event:
+			case <-ctx.Done():
+				return
+			}
+		}
+	}
+
+	for scanner.Scan() {
+		select {
+		case <-ctx.Done():
+			return
+		default:
+		}
+
+		data := utils.ParseSSELine(scanner.Text())
+		if data == "" {
+			continue
+		}
+
+		if data == "[DONE]" {
+			flushParser()
+			return
+		}
+
+		var eventData models.CursorEventData
+		if err := json.Unmarshal([]byte(data), &eventData); err != nil {
+			logrus.WithError(err).Debugf("Failed to parse SSE data: %s", data)
+			continue
+		}
+
+		switch eventData.Type {
+		case "error":
+			if eventData.ErrorText != "" {
+				errResp := middleware.NewCursorWebError(http.StatusBadGateway, "cursor API error: "+eventData.ErrorText)
+				select {
+				case output <- errResp:
+				default:
+					logrus.WithError(errResp).Warn("failed to push SSE error to channel")
+				}
+				return
+			}
+		case "finish":
+			flushParser()
+			if eventData.MessageMetadata != nil && eventData.MessageMetadata.Usage != nil {
+				usage := models.Usage{
+					PromptTokens:     eventData.MessageMetadata.Usage.InputTokens,
+					CompletionTokens: eventData.MessageMetadata.Usage.OutputTokens,
+					TotalTokens:      eventData.MessageMetadata.Usage.TotalTokens,
+				}
+				select {
+				case output <- usage:
+				case <-ctx.Done():
+					return
+				}
+			}
+			return
+		default:
+			if eventData.Delta == "" {
+				continue
+			}
+			for _, event := range parser.Feed(eventData.Delta) {
+				select {
+				case output <- event:
+				case <-ctx.Done():
+					return
+				}
+			}
+		}
+	}
+
+	if err := scanner.Err(); err != nil {
 		if errors.Is(err, context.Canceled) {
 			return
 		}
@@ -213,7 +412,10 @@ func (s *CursorService) consumeSSE(ctx context.Context, resp *http.Response, out
 		default:
 			logrus.WithError(err).Warn("failed to push SSE error to channel")
 		}
+		return
 	}
+
+	flushParser()
 }
 
 func (s *CursorService) fetchXIsHuman(ctx context.Context) (string, error) {
@@ -307,7 +509,7 @@ func (s *CursorService) prepareJS(cursorJS string) string {
 	return mainScript
 }
 
-func (s *CursorService) truncateMessages(messages []models.Message) []models.Message {
+func (s *CursorService) truncateCursorMessages(messages []models.CursorMessage) []models.CursorMessage {
 	if len(messages) == 0 || s.config.MaxInputLength <= 0 {
 		return messages
 	}
@@ -315,19 +517,19 @@ func (s *CursorService) truncateMessages(messages []models.Message) []models.Mes
 	maxLength := s.config.MaxInputLength
 	total := 0
 	for _, msg := range messages {
-		total += len(msg.GetStringContent())
+		total += cursorMessageTextLength(msg)
 	}
 
 	if total <= maxLength {
 		return messages
 	}
 
-	var result []models.Message
+	var result []models.CursorMessage
 	startIdx := 0
 
 	if strings.EqualFold(messages[0].Role, "system") {
 		result = append(result, messages[0])
-		maxLength -= len(messages[0].GetStringContent())
+		maxLength -= cursorMessageTextLength(messages[0])
 		if maxLength < 0 {
 			maxLength = 0
 		}
@@ -335,10 +537,10 @@ func (s *CursorService) truncateMessages(messages []models.Message) []models.Mes
 	}
 
 	current := 0
-	collected := make([]models.Message, 0, len(messages)-startIdx)
+	collected := make([]models.CursorMessage, 0, len(messages)-startIdx)
 	for i := len(messages) - 1; i >= startIdx; i-- {
 		msg := messages[i]
-		msgLen := len(msg.GetStringContent())
+		msgLen := cursorMessageTextLength(msg)
 		if msgLen == 0 {
 			continue
 		}
@@ -354,6 +556,14 @@ func (s *CursorService) truncateMessages(messages []models.Message) []models.Mes
 	}
 
 	return append(result, collected...)
+}
+
+func cursorMessageTextLength(msg models.CursorMessage) int {
+	total := 0
+	for _, part := range msg.Parts {
+		total += len(part.Text)
+	}
+	return total
 }
 
 func (s *CursorService) chatHeaders(xIsHuman string) map[string]string {

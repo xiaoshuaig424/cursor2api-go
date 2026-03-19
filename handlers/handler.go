@@ -112,7 +112,7 @@ func NewHandler(cfg *config.Config) *Handler {
         <div class="info">
             <p><strong>Status:</strong> <span class="status-ok">✅ Running</span></p>
             <p><strong>Version:</strong> Go Implementation</p>
-            <p><strong>Description:</strong> OpenAI-compatible API proxy for Cursor AI</p>
+            <p><strong>Description:</strong> OpenAI-compatible chat completions proxy for Cursor AI</p>
         </div>
         
         <div class="info">
@@ -123,7 +123,7 @@ func NewHandler(cfg *config.Config) *Handler {
             </div>
             <div class="endpoint">
                 <strong>POST</strong> <code>/v1/chat/completions</code><br>
-                <small>Create chat completion (supports streaming)</small>
+                <small>Create chat completion (supports streaming and tool calls)</small>
             </div>
             <div class="endpoint">
                 <strong>GET</strong> <code>/health</code><br>
@@ -144,10 +144,11 @@ func NewHandler(cfg *config.Config) *Handler {
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer 0000" \
   -d '{
-    "model": "claude-sonnet-4.6",
+    "model": "claude-sonnet-4.6-thinking",
     "messages": [
-      {"role": "user", "content": "Hello!"}
-    ]
+      {"role": "user", "content": "Plan first, then decide whether a tool is needed."}
+    ],
+    "stream": true
   }'</code></pre>
         </div>
         
@@ -239,18 +240,23 @@ func (h *Handler) ChatCompletions(c *gin.Context) {
 	request.MaxTokens = models.ValidateMaxTokens(request.Model, request.MaxTokens)
 
 	// 调用Cursor服务
-	chatGenerator, err := h.cursorService.ChatCompletion(c.Request.Context(), &request)
-	if err != nil {
-		logrus.WithError(err).Error("Failed to create chat completion")
-		middleware.HandleError(c, err)
-		return
-	}
-
 	// 根据是否流式返回不同响应
 	if request.Stream {
+		chatGenerator, err := h.cursorService.ChatCompletion(c.Request.Context(), &request)
+		if err != nil {
+			logrus.WithError(err).Error("Failed to create chat completion")
+			middleware.HandleError(c, err)
+			return
+		}
 		utils.SafeStreamWrapper(utils.StreamChatCompletion, c, chatGenerator, request.Model)
 	} else {
-		utils.NonStreamChatCompletion(c, chatGenerator, request.Model)
+		resp, err := h.cursorService.ChatCompletionNonStream(c.Request.Context(), &request)
+		if err != nil {
+			logrus.WithError(err).Error("Failed to create non-stream chat completion")
+			middleware.HandleError(c, err)
+			return
+		}
+		c.JSON(http.StatusOK, resp)
 	}
 }
 

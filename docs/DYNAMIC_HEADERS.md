@@ -165,10 +165,10 @@ go build -o cursor2api-go
 
 启用调试模式后可以看到：
 ```
-DEBU Sending request to Cursor API attempt=1 model=claude-4.5-sonnet
+DEBU Sending request to Cursor API attempt=1 model=claude-sonnet-4.6
 WARN Received 403 Access Denied, refreshing browser fingerprint...
 DEBU Refreshed browser fingerprint platform=macOS chrome_version=124
-DEBU Sending request to Cursor API attempt=2 model=claude-4.5-sonnet
+DEBU Sending request to Cursor API attempt=2 model=claude-sonnet-4.6
 ```
 
 ## 未来改进

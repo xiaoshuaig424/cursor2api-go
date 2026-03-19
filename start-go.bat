@@ -74,7 +74,7 @@ if not exist .env (
         echo.
         echo # API配置
         echo API_KEY=0000
-        echo MODELS=gpt-5.1,gpt-5,gpt-5-codex,gpt-5-mini,gpt-5-nano,gpt-4.1,gpt-4o,claude-3.5-sonnet,claude-3.5-haiku,claude-3.7-sonnet,claude-4-sonnet,claude-4.5-sonnet,claude-4-opus,claude-4.1-opus,gemini-2.5-pro,gemini-2.5-flash,gemini-3.0-pro,o3,o4-mini,deepseek-r1,deepseek-v3.1,kimi-k2-instruct,grok-3
+        echo MODELS=claude-sonnet-4.6
         echo SYSTEM_PROMPT_INJECT=
         echo.
         echo # 请求配置

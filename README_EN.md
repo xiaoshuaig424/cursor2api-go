@@ -2,23 +2,34 @@
 
 English | [简体中文](README.md)
 
-A Go service that converts Cursor Web to a basic OpenAI chat completions compatible API, suitable for local deployment.
+A Go service that converts Cursor Web into an OpenAI `chat/completions` compatible API for local deployment.
 
 [![Go Version](https://img.shields.io/badge/Go-1.24+-blue.svg)](https://golang.org)
 [![License: PolyForm Noncommercial](https://img.shields.io/badge/License-PolyForm%20Noncommercial-orange.svg)](https://polyformproject.org/licenses/noncommercial/1.0.0/)
 
 ## ✨ Features
 
-- ✅ Compatible with the basic OpenAI chat completions format
+- ✅ Compatible with OpenAI `chat/completions`
 - ✅ Supports streaming and non-streaming responses
 - ✅ High-performance Go implementation
 - ✅ Automatic Cursor Web authentication
 - ✅ Clean web interface
-- ❌ Does not support tools / function calling / MCP
+- ✅ Supports `tools`, `tool_choice`, and `tool_calls`
+- ✅ Automatically derives `-thinking` public models
+- ❌ Does not yet support Anthropic `/v1/messages` or MCP
+
+## 🖼️ Screenshots
+
+Drop images into `docs/images/` and the README will render them.
+
+![Home preview](docs/images/home.png)
+![Tool calls preview 1](docs/images/play1.png)
+![Tool calls preview 2](docs/images/play2.png)
 
 ## 🤖 Supported Models
 
-- **Anthropic Claude**: claude-sonnet-4.6
+- **Anthropic Claude**: `claude-sonnet-4.6`
+- **Derived thinking model**: `claude-sonnet-4.6-thinking`
 
 ## 🚀 Quick Start
 
@@ -197,13 +208,69 @@ curl -X POST http://localhost:8002/v1/chat/completions \
   }'
 ```
 
+### Tool Request
+
+```bash
+curl -X POST http://localhost:8002/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer 0000" \
+  -d '{
+    "model": "claude-sonnet-4.6",
+    "messages": [{"role": "user", "content": "Check the weather in Beijing"}],
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "get_weather",
+          "description": "Get current weather",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "city": {"type": "string"}
+            },
+            "required": ["city"]
+          }
+        }
+      }
+    ]
+  }'
+```
+
+### `-thinking` Model
+
+```bash
+curl -X POST http://localhost:8002/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer 0000" \
+  -d '{
+    "model": "claude-sonnet-4.6-thinking",
+    "messages": [{"role": "user", "content": "Think first, then decide whether a tool is needed"}],
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "lookup",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "q": {"type": "string"}
+            },
+            "required": ["q"]
+          }
+        }
+      }
+    ],
+    "stream": true
+  }'
+```
+
 ### Use in Third-Party Apps
 
 In any app that supports custom OpenAI API (e.g., ChatGPT Next Web, Lobe Chat):
 
 1. **API URL**: `http://localhost:8002`
 2. **API Key**: `0000` (or custom)
-3. **Model**: Choose from supported models
+3. **Model**: Choose a supported base model or its automatically derived `-thinking` variant
 
 ## ⚙️ Configuration
 
@@ -214,8 +281,9 @@ In any app that supports custom OpenAI API (e.g., ChatGPT Next Web, Lobe Chat):
 | `PORT` | `8002` | Server port |
 | `DEBUG` | `false` | Debug mode (shows detailed logs and route info when enabled) |
 | `API_KEY` | `0000` | API authentication key |
-| `MODELS` | `claude-sonnet-4.6` | Supported models (comma-separated) |
+| `MODELS` | `claude-sonnet-4.6` | Base model list (comma-separated); the service automatically exposes matching `-thinking` public models |
 | `TIMEOUT` | `60` | Request timeout (seconds) |
+| `KILO_TOOL_STRICT` | `false` | Kilo Code compatibility: if `tools` are provided and `tool_choice=auto`, treat it as “tool use required” |
 
 ### Debug Mode
 
@@ -244,6 +312,13 @@ Having issues? Check the **[Troubleshooting Guide](TROUBLESHOOTING.md)** for sol
 - Token fetch failures
 - Connection timeouts
 - Cloudflare blocking
+
+## 🧩 Kilo Code / Agent Orchestrator Compatibility
+
+Some orchestrators enforce “must use tools” and may throw errors like `MODEL_NO_TOOLS_USED` when a response contains no tool call.
+
+- **Recommended**: set `KILO_TOOL_STRICT=true` in `.env`
+- **Non-stream safety net**: if tools are provided and tool use is required (`tool_choice=required/function`, or `KILO_TOOL_STRICT`), but the first attempt produces no `tool_calls`, the server automatically retries once (non-stream only)
 
 
 ### Windows Startup Scripts
