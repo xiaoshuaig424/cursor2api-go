@@ -74,7 +74,7 @@ func LoadConfig() (*Config, error) {
 		Port:               getEnvAsInt("PORT", 8002),
 		Debug:              getEnvAsBool("DEBUG", false),
 		APIKey:             getEnv("API_KEY", "0000"),
-		Models:             getEnv("MODELS", "claude-sonnet-4.6"),
+		Models:             getEnv("MODELS", "anthropic/claude-sonnet-4.6,claude-sonnet-4-5-20250929,claude-sonnet-4-20250514,claude-3-5-sonnet-20241022"),
 		SystemPromptInject: getEnv("SYSTEM_PROMPT_INJECT", ""),
 		Timeout:            getEnvAsInt("TIMEOUT", 60),
 		MaxInputLength:     getEnvAsInt("MAX_INPUT_LENGTH", 200000),

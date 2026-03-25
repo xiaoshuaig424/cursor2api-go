@@ -419,80 +419,10 @@ func (s *CursorService) consumeSSE(ctx context.Context, resp *http.Response, out
 }
 
 func (s *CursorService) fetchXIsHuman(ctx context.Context) (string, error) {
-	// 检查缓存
-	s.scriptMutex.RLock()
-	cached := s.scriptCache
-	lastFetch := s.scriptCacheTime
-	s.scriptMutex.RUnlock()
-
-	var scriptBody string
-	// 缓存有效期缩短到1分钟,避免 token 过期
-	if cached != "" && time.Since(lastFetch) < 1*time.Minute {
-		scriptBody = cached
-	} else {
-		resp, err := s.client.R().
-			SetContext(ctx).
-			SetHeaders(s.scriptHeaders()).
-			Get(s.config.ScriptURL)
-
-		if err != nil {
-			// 如果请求失败且有缓存，使用缓存
-			if cached != "" {
-				logrus.Warnf("Failed to fetch script, using cached version: %v", err)
-				scriptBody = cached
-			} else {
-				// 清除缓存并生成一个简单的token
-				s.scriptMutex.Lock()
-				s.scriptCache = ""
-				s.scriptCacheTime = time.Time{}
-				s.scriptMutex.Unlock()
-				// 生成一个简单的x-is-human token作为fallback
-				token := utils.GenerateRandomString(64)
-				logrus.Warnf("Failed to fetch script, generated fallback token")
-				return token, nil
-			}
-		} else if resp.StatusCode != http.StatusOK {
-			// 如果状态码异常且有缓存，使用缓存
-			if cached != "" {
-				logrus.Warnf("Script fetch returned status %d, using cached version", resp.StatusCode)
-				scriptBody = cached
-			} else {
-				// 清除缓存并生成一个简单的token
-				s.scriptMutex.Lock()
-				s.scriptCache = ""
-				s.scriptCacheTime = time.Time{}
-				s.scriptMutex.Unlock()
-				// 生成一个简单的x-is-human token作为fallback
-				token := utils.GenerateRandomString(64)
-				logrus.Warnf("Script fetch returned status %d, generated fallback token", resp.StatusCode)
-				return token, nil
-			}
-		} else {
-			scriptBody = string(resp.Bytes())
-			// 更新缓存
-			s.scriptMutex.Lock()
-			s.scriptCache = scriptBody
-			s.scriptCacheTime = time.Now()
-			s.scriptMutex.Unlock()
-		}
-	}
-
-	compiled := s.prepareJS(scriptBody)
-	value, err := utils.RunJS(compiled)
-	if err != nil {
-		// JS 执行失败时清除缓存并生成fallback token
-		s.scriptMutex.Lock()
-		s.scriptCache = ""
-		s.scriptCacheTime = time.Time{}
-		s.scriptMutex.Unlock()
-		token := utils.GenerateRandomString(64)
-		logrus.Warnf("Failed to execute JS, generated fallback token: %v", err)
-		return token, nil
-	}
-
-	logrus.WithField("length", len(value)).Debug("Fetched x-is-human token")
-
-	return value, nil
+	// 鉴于 Cursor 的脚本 URL 频繁变动且 404 时随机 Token 依然可用，
+	// 直接生成随机 Token 以消除告警并提升响应速度。
+	token := utils.GenerateRandomString(64)
+	return token, nil
 }
 
 func (s *CursorService) prepareJS(cursorJS string) string {

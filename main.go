@@ -103,7 +103,7 @@ func setupRoutes(router *gin.Engine, handler *handlers.Handler) {
 	v1 := router.Group("/v1")
 	{
 		// 模型列表
-		v1.GET("/models", middleware.AuthRequired(), handler.ListModels)
+		v1.GET("/models", handler.ListModels) // 模型列表不需要鉴权
 
 		// 聊天完成
 		v1.POST("/chat/completions", middleware.AuthRequired(), handler.ChatCompletions)

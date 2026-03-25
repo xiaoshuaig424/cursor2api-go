@@ -39,6 +39,34 @@ func GetModelConfigs() map[string]ModelConfig {
 			ContextWindow: 200000,
 			CursorModel:   "anthropic/claude-sonnet-4.6",
 		},
+		"anthropic/claude-sonnet-4.6": {
+			ID:            "anthropic/claude-sonnet-4.6",
+			Provider:      "Anthropic",
+			MaxTokens:     200000,
+			ContextWindow: 200000,
+			CursorModel:   "anthropic/claude-sonnet-4.6",
+		},
+		"claude-sonnet-4-5-20250929": {
+			ID:            "claude-sonnet-4-5-20250929",
+			Provider:      "Anthropic",
+			MaxTokens:     200000,
+			ContextWindow: 200000,
+			CursorModel:   "anthropic/claude-sonnet-4.6",
+		},
+		"claude-sonnet-4-20250514": {
+			ID:            "claude-sonnet-4-20250514",
+			Provider:      "Anthropic",
+			MaxTokens:     200000,
+			ContextWindow: 200000,
+			CursorModel:   "anthropic/claude-sonnet-4.6",
+		},
+		"claude-3-5-sonnet-20241022": {
+			ID:            "claude-3-5-sonnet-20241022",
+			Provider:      "Anthropic",
+			MaxTokens:     200000,
+			ContextWindow: 200000,
+			CursorModel:   "anthropic/claude-sonnet-4.6",
+		},
 	}
 }
 
