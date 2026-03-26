@@ -24,3 +24,17 @@ jobs:
           context: .
           push: true
           tags: ghcr.io/${{ github.repository_owner }}/cursor2api-go41268:latest
+          build-args: |
+            PORT=${{ secrets.PORT }}
+            DEBUG=${{ secrets.DEBUG }}
+            API_KEY=${{ secrets.API_KEY }}
+            MODELS=${{ secrets.MODELS }}
+            SYSTEM_PROMPT_INJECT=${{ secrets.SYSTEM_PROMPT_INJECT }}
+            TIMEOUT=${{ secrets.TIMEOUT }}
+            KILO_TOOL_STRICT=${{ secrets.KILO_TOOL_STRICT }}
+            MAX_INPUT_LENGTH=${{ secrets.MAX_INPUT_LENGTH }}
+            USER_AGENT=${{ secrets.USER_AGENT }}
+            UNMASKED_VENDOR_WEBGL=${{ secrets.UNMASKED_VENDOR_WEBGL }}
+            UNMASKED_RENDERER_WEBGL=${{ secrets.UNMASKED_RENDERER_WEBGL }}
+            SCRIPT_URL=${{ secrets.SCRIPT_URL }}
+
