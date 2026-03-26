@@ -53,16 +53,29 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
 # 启动应用
 CMD ["./cursor2api-go"]
 
-# 内置所有默认环境变量
-ENV PORT=8002 \
-    DEBUG=false \
-    API_KEY=sk-StheHAVkgHW6HlfG7 \
-    MODELS=claude-sonnet-4.6 \
-    SYSTEM_PROMPT_INJECT= \
-    TIMEOUT=60 \
-    KILO_TOOL_STRICT=true \
-    MAX_INPUT_LENGTH=200000 \
-    USER_AGENT="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36" \
-    UNMASKED_VENDOR_WEBGL="Google Inc. (Intel)" \
-    UNMASKED_RENDERER_WEBGL="ANGLE (Intel, Intel(R) UHD Graphics 620 Direct3D11 vs_5_0 ps_5_0, D3D11)" \
-    SCRIPT_URL="https://cursor.com/_next/static/chunks/pages/_app.js"
+# 环境变量通过 GitHub Actions secrets 注入（无默认值）
+ARG PORT
+ARG DEBUG
+ARG API_KEY
+ARG MODELS
+ARG SYSTEM_PROMPT_INJECT
+ARG TIMEOUT
+ARG KILO_TOOL_STRICT
+ARG MAX_INPUT_LENGTH
+ARG USER_AGENT
+ARG UNMASKED_VENDOR_WEBGL
+ARG UNMASKED_RENDERER_WEBGL
+ARG SCRIPT_URL
+
+ENV PORT=${PORT} \
+    DEBUG=${DEBUG} \
+    API_KEY=${API_KEY} \
+    MODELS=${MODELS} \
+    SYSTEM_PROMPT_INJECT=${SYSTEM_PROMPT_INJECT} \
+    TIMEOUT=${TIMEOUT} \
+    KILO_TOOL_STRICT=${KILO_TOOL_STRICT} \
+    MAX_INPUT_LENGTH=${MAX_INPUT_LENGTH} \
+    USER_AGENT=${USER_AGENT} \
+    UNMASKED_VENDOR_WEBGL=${UNMASKED_VENDOR_WEBGL} \
+    UNMASKED_RENDERER_WEBGL=${UNMASKED_RENDERER_WEBGL} \
+    SCRIPT_URL=${SCRIPT_URL}
