@@ -28,8 +28,8 @@ Drop images into `docs/images/` and the README will render them.
 
 ## 🤖 Supported Models
 
-- **Anthropic Claude**: `claude-sonnet-4.6`
-- **Derived thinking model**: `claude-sonnet-4.6-thinking`
+- **Google Gemini**: `gemini-3-flash`
+- **Derived thinking model**: `gemini-3-flash-thinking`
 
 ## 🚀 Quick Start
 
@@ -189,7 +189,7 @@ curl -X POST http://localhost:8002/v1/chat/completions \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer 0000" \
   -d '{
-    "model": "claude-sonnet-4.6",
+    "model": "gemini-3-flash",
     "messages": [{"role": "user", "content": "Hello!"}],
     "stream": false
   }'
@@ -202,7 +202,7 @@ curl -X POST http://localhost:8002/v1/chat/completions \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer 0000" \
   -d '{
-    "model": "claude-sonnet-4.6",
+    "model": "gemini-3-flash",
     "messages": [{"role": "user", "content": "Hello!"}],
     "stream": true
   }'
@@ -215,7 +215,7 @@ curl -X POST http://localhost:8002/v1/chat/completions \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer 0000" \
   -d '{
-    "model": "claude-sonnet-4.6",
+    "model": "gemini-3-flash",
     "messages": [{"role": "user", "content": "Check the weather in Beijing"}],
     "tools": [
       {
@@ -243,7 +243,7 @@ curl -X POST http://localhost:8002/v1/chat/completions \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer 0000" \
   -d '{
-    "model": "claude-sonnet-4.6-thinking",
+    "model": "gemini-3-flash-thinking",
     "messages": [{"role": "user", "content": "Think first, then decide whether a tool is needed"}],
     "tools": [
       {
@@ -281,7 +281,7 @@ In any app that supports custom OpenAI API (e.g., ChatGPT Next Web, Lobe Chat):
 | `PORT` | `8002` | Server port |
 | `DEBUG` | `false` | Debug mode (shows detailed logs and route info when enabled) |
 | `API_KEY` | `0000` | API authentication key |
-| `MODELS` | `claude-sonnet-4.6` | Base model list (comma-separated); the service automatically exposes matching `-thinking` public models |
+| `MODELS` | `gemini-3-flash` | Base model list (comma-separated); the service automatically exposes matching `-thinking` public models |
 | `TIMEOUT` | `60` | Request timeout (seconds) |
 | `KILO_TOOL_STRICT` | `false` | Kilo Code compatibility: if `tools` are provided and `tool_choice=auto`, treat it as “tool use required” |
 

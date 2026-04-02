@@ -117,9 +117,35 @@ if not exist cursor2api-go.exe (
 
 echo [成功] 应用编译成功！
 
+:: 读取 .env 配置
+set PORT=8002
+set API_KEY=0000
+set MODELS=claude-sonnet-4.6
+set DEBUG=false
+if exist .env (
+    for /f "tokens=1,* delims==" %%a in ('findstr /r "^PORT= ^API_KEY= ^MODELS= ^DEBUG=" .env') do (
+        if "%%a"=="PORT" set PORT=%%b
+        if "%%a"=="API_KEY" set API_KEY=%%b
+        if "%%a"=="MODELS" set MODELS=%%b
+        if "%%a"=="DEBUG" set DEBUG=%%b
+    )
+)
+
+:: 掩码 API Key
+set API_KEY_SHOW=!API_KEY:~0,4!****
+
 :: 显示服务信息
 echo.
-echo [成功] 准备就绪，正在启动服务...
+echo =========================================
+echo   🌐 服务地址:  http://localhost:!PORT!
+echo   📚 API 文档:  http://localhost:!PORT!/
+echo   💊 健康检查:  http://localhost:!PORT!/health
+echo   🔑 API 密钥:  !API_KEY_SHOW!
+echo   🤖 模型列表:  !MODELS!
+if "!DEBUG!"=="true" echo   🐛 调试模式:  已启用
+echo =========================================
+echo.
+echo [成功] 准备就绪，正在启动服务... 按 Ctrl+C 停止
 echo.
 
 :: 启动服务

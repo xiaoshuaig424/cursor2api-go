@@ -318,7 +318,7 @@ curl -H "Authorization: Bearer YOUR_KEY" {{BASE_URL}}/v1/models</code>
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer YOUR_KEY" \
   -d '{
-    "model": "claude-sonnet-4.6",
+    "model": "gemini-3-flash",
     "messages": [{"role": "user", "content": "Hello!"}],
     "stream": false
   }'</code>
@@ -331,7 +331,7 @@ curl -H "Authorization: Bearer YOUR_KEY" {{BASE_URL}}/v1/models</code>
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer YOUR_KEY" \
   -d '{
-    "model": "claude-sonnet-4.6",
+    "model": "gemini-3-flash",
     "messages": [{"role": "user", "content": "Hello!"}],
     "stream": true
   }'</code>
@@ -344,7 +344,7 @@ curl -H "Authorization: Bearer YOUR_KEY" {{BASE_URL}}/v1/models</code>
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer YOUR_KEY" \
   -d '{
-    "model": "claude-sonnet-4.6",
+    "model": "gemini-3-flash",
     "messages": [{"role": "user", "content": "What is 2+2? Use the calculator tool."}],
     "tools": [
       {
@@ -384,12 +384,12 @@ KILO_TOOL_STRICT=true
                 <p>点击模型卡片可查看详细信息和使用示例</p>
 
                 <div class="models-grid" id="modelsGrid">
-                    <div class="model-card" onclick="selectModel('anthropic/claude-sonnet-4.6')">
-                        <div class="model-name">anthropic/claude-sonnet-4.6</div>
+                    <div class="model-card" onclick="selectModel('anthropic/gemini-3-flash')">
+                        <div class="model-name">anthropic/gemini-3-flash</div>
                         <div class="provider">Anthropic · Base</div>
                     </div>
-                    <div class="model-card" onclick="selectModel('anthropic/claude-sonnet-4.6-thinking')">
-                        <div class="model-name">anthropic/claude-sonnet-4.6-thinking</div>
+                    <div class="model-card" onclick="selectModel('anthropic/gemini-3-flash-thinking')">
+                        <div class="model-name">anthropic/gemini-3-flash-thinking</div>
                         <div class="provider">Anthropic · Thinking</div>
                     </div>
                     <div class="model-card" onclick="selectModel('claude-sonnet-4-5-20250929')">
@@ -451,7 +451,7 @@ KILO_TOOL_STRICT=true
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer YOUR_KEY" \
   -d '{
-    "model": "claude-sonnet-4.6",
+    "model": "gemini-3-flash",
     "messages": [
       {"role": "user", "content": "你好"}
     ],

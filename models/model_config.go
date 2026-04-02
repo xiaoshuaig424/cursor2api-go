@@ -32,6 +32,13 @@ type ModelConfig struct {
 // GetModelConfigs 获取所有基础模型配置
 func GetModelConfigs() map[string]ModelConfig {
 	return map[string]ModelConfig{
+		"gemini-3-flash": {
+			ID:            "gemini-3-flash",
+			Provider:      "Google",
+			MaxTokens:     100000,
+			ContextWindow: 100000,
+			CursorModel:   "google/gemini-3-flash",
+		},
 		"claude-sonnet-4.6": {
 			ID:            "claude-sonnet-4.6",
 			Provider:      "Anthropic",

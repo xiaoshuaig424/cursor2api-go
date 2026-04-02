@@ -25,8 +25,8 @@
 
 ## 🤖 支持的模型
 
-- **Anthropic Claude**: `claude-sonnet-4.6`
-- **自动派生 thinking 模型**: `claude-sonnet-4.6-thinking`
+- **Google Gemini**: `gemini-3-flash`
+- **自动派生 thinking 模型**: `gemini-3-flash-thinking`
 
 ## 🚀 快速开始
 
@@ -186,7 +186,7 @@ curl -X POST http://localhost:8002/v1/chat/completions \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer 0000" \
   -d '{
-    "model": "claude-sonnet-4.6",
+    "model": "gemini-3-flash",
     "messages": [{"role": "user", "content": "Hello!"}],
     "stream": false
   }'
@@ -199,7 +199,7 @@ curl -X POST http://localhost:8002/v1/chat/completions \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer 0000" \
   -d '{
-    "model": "claude-sonnet-4.6",
+    "model": "gemini-3-flash",
     "messages": [{"role": "user", "content": "Hello!"}],
     "stream": true
   }'
@@ -212,7 +212,7 @@ curl -X POST http://localhost:8002/v1/chat/completions \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer 0000" \
   -d '{
-    "model": "claude-sonnet-4.6",
+    "model": "gemini-3-flash",
     "messages": [{"role": "user", "content": "帮我查询北京天气"}],
     "tools": [
       {
@@ -240,7 +240,7 @@ curl -X POST http://localhost:8002/v1/chat/completions \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer 0000" \
   -d '{
-    "model": "claude-sonnet-4.6-thinking",
+    "model": "gemini-3-flash-thinking",
     "messages": [{"role": "user", "content": "先思考再决定要不要用工具"}],
     "tools": [
       {
@@ -278,7 +278,7 @@ curl -X POST http://localhost:8002/v1/chat/completions \
 | `PORT` | `8002` | 服务器端口 |
 | `DEBUG` | `false` | 调试模式（启用后显示详细日志和路由信息） |
 | `API_KEY` | `0000` | API 认证密钥 |
-| `MODELS` | `claude-sonnet-4.6` | 基础模型列表（逗号分隔），服务会自动追加对应的 `-thinking` 公开模型 |
+| `MODELS` | `gemini-3-flash` | 基础模型列表（逗号分隔），服务会自动追加对应的 `-thinking` 公开模型 |
 | `TIMEOUT` | `60` | 请求超时时间（秒） |
 | `KILO_TOOL_STRICT` | `false` | Kilo Code 兼容开关：当请求提供 `tools` 且 `tool_choice=auto` 时，将其提升为“必须至少调用一次工具” |
 
